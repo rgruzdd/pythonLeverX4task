@@ -4,8 +4,11 @@ from config import host, user, password, db_name
 
 
 class DatabaseHandler():
+    def __init__(self):
+        self.connection = DatabaseHandler.create_connection()
+
     @staticmethod
-    def database_create(text_rooms, text_students):
+    def create_connection():
         try:
             connection = pymysql.connect(
                 host=host,
@@ -16,9 +19,14 @@ class DatabaseHandler():
                 cursorclass=pymysql.cursors.DictCursor
             )
             print("Successfully connected")
+        except Exception as exx:
+            print("Connection refused")
+            print(exx)
+        return connection
 
+    def database_create(self, text_rooms, text_students):
             try:
-                with connection.cursor() as cursor:
+                with self.connection.cursor() as cursor:
                     stmt = "SHOW TABLES LIKE 'rooms'"
                     cursor.execute(stmt)
                     result = cursor.fetchone()
@@ -30,16 +38,16 @@ class DatabaseHandler():
                         cursor.execute(creat_table_query)
                         print("Table rooms created successfully")
 
-                        with connection.cursor() as cursor:
+                        with self.connection.cursor() as cursor:
                             for i in text_rooms:
                                 insert_query = "INSERT INTO rooms (id, name) " \
                                                "VALUES ('%d', '%s');" \
                                                % (i['id'], i['name'])
                                 cursor.execute(insert_query)
-                                connection.cursor()
-                                connection.commit()
+                                self.connection.cursor()
+                                self.connection.commit()
 
-                with connection.cursor() as cursor:
+                with self.connection.cursor() as cursor:
                     stmt = "SHOW TABLES LIKE 'students'"
                     cursor.execute(stmt)
                     result = cursor.fetchone()
@@ -54,20 +62,27 @@ class DatabaseHandler():
                                         "FOREIGN KEY (room) REFERENCES rooms(id));"
                         cursor.execute(creat_table_query)
                         print("Table students created successfully")
-                        with connection.cursor() as cursor:
+                        with self.connection.cursor() as cursor:
                             for i in text_students:
                                 insert_query = "INSERT INTO students (id, name, birthday, room, sex) " \
                                                "VALUES ('%d', '%s', '%s', '%d', '%s');" \
                                                % (i['id'], i['name'], i['birthday'], i['room'], i['sex'])
                                 cursor.execute(insert_query)
-                                connection.cursor()
-                                connection.commit()
+                                self.connection.cursor()
+                                self.connection.commit()
             except:
-                connection.close()
+                self.connection.close()
+            try:
+                with self.connection.cursor() as cursor:
+                    index = 'CREATE INDEX stud_ind ' \
+                        'ON students (id, name, birthday, room, sex) '
+                cursor.execute(index)
+                indexx = cursor.fetchall()
+                print('Index was created')
 
-        except Exception as exx:
-            print("Connection refused")
-            print(exx)
+            except:
+                 print('Index is already existed')
+
 
 
 
